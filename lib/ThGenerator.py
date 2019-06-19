@@ -5,9 +5,9 @@ import numpy as np
 
 class ThGenerator():
 
-    def __init__(self):
-        self.config = VRDConfig.VRDConfig()
-        self.vrdutil = VRDUtil.VRDUtil()
+    def __init__(self, config):
+        self.config = config
+        self.vrdutil = VRDUtil.VRDUtil(config)
 
     def captureFrames(self, videoFilePath):
         inputFile = self.vrdutil.getInputFile(videoFilePath)
@@ -123,6 +123,7 @@ class ThGenerator():
             foldedFrame = np.floor_divide(leftSide, 2) + np.floor_divide(rightSide, 2)
         
             foldedFrames.append(foldedFrame)
+
         return foldedFrames
 
     def convertToGray(self, frames):
@@ -154,18 +155,19 @@ class ThGenerator():
         #storeFramesOnDrive(frames, videoDirectory+"/processed/"+fileName+"/Original")
         segments = self.segmentFrames(frames)
         frames = self.makeKeyFrames(segments)
-        #storeFramesOnDrive(frames, "../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Kv")
+        self.vrdutil.storeFramesOnDrive(frames, "assets/processed/"+fileName+"/Kv")
         frames = self.zoomFrames(frames)
         #storeFramesOnDrive(frames, "../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Zoomed")
         frames = self.scaleFrames(frames)
         #storeFramesOnDrive(frames, "../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Scaled")
         frames = self.foldFrames(frames)
         ccFrames = frames
+        self.vrdutil.storeFramesOnDrive(ccFrames, "assets/processed/"+fileName+"/Folded")
         #storeFramesOnDrive(frames, "../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Folded")
         frames = self.scaleFrames(frames, 32, 32)
         #storeFramesOnDrive(frames, "../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Thumbs-color")
         frames = self.convertToGray(frames)
         self.vrdutil.storeFramesOnDrive(frames, "assets/fingerprints/"+fileName+"/Th")
 
-        return frames, ccFrames
+        return frames
 

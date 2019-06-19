@@ -5,15 +5,15 @@ import numpy as np
 
 class CCGenerator():
 
-	def __init__(self):
-		self.config = VRDConfig.VRDConfig()
-		self.vrdutil = VRDUtil.VRDUtil()
+	def __init__(self, config):
+		self.config = config
+		self.vrdutil = VRDUtil.VRDUtil(config)
 
 
 	def calculateColorCorrelations(self, frames):
 		ccs = []
 		for frame in frames:
-			ccs.append(calculateColorCorrelation(frame))
+			ccs.append(self.calculateColorCorrelation(frame))
 		return ccs
 
 	def calculateColorCorrelation(self, frame):
@@ -74,38 +74,15 @@ class CCGenerator():
 	def run(self, videoFilePath):
 		path, fileName = os.path.split(videoFilePath)
 
-		frames = readFramesFromDrive("../assets/fingerprints/"+filename+"/Keyframes")
+		frames = self.vrdutil.readFramesFromDrive("assets/processed/"+fileName+"/Folded")
 		if frames == False:
 			return False
 
+		ccs = self.calculateColorCorrelations(frames)
 		
+		#for cc in ccs:
+		#	print(cc["bin"])
 
+		self.vrdutil.storeColorCorrelationOnDrive(ccs, "assets/fingerprints/"+fileName+"/CC")
 
-	def run2(self):
-		frameKey = 42
-		frames = readFramesFromDrive("../assets/processed/ThinkNanoThinkAmes_aav1949.MP4/Original")
-		cc = calculateColorCorrelation(frames[frameKey])
-
-		rgbImage = cv2.cvtColor(frames[frameKey], cv2.COLOR_BGR2RGB)
-		plt.figure(0)
-		plt.imshow(rgbImage)
-
-		rgbThumb = cv2.cvtColor(cc["frame"], cv2.COLOR_BGR2RGB)
-		plt.figure(1)
-		plt.imshow(rgbThumb)
-
-
-		print("Fingerprint: "+cc["bin"])
-
-		ind = np.arange(6)
-		values = []
-		for key, value in cc["cc"].items():
-			values.append(round(value*100))
-
-		plt.figure(2)
-		plt.bar(ind, values, 0.5)
-		plt.ylabel('Percent')
-		plt.title('Color Correlation')
-		plt.xticks(ind, list(cc["cc"].keys()))
-		plt.yticks(np.arange(0, 100, 10))
-		plt.show()
+		return ccs

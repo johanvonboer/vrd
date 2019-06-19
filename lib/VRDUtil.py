@@ -13,8 +13,9 @@ import shutil
 
 
 class VRDUtil:
-    def __init__(self):
-        self.config = VRDConfig.VRDConfig()
+    def __init__(self, config):
+        self.config = config
+        #self.config = VRDConfig.VRDConfig()
 
     def getInputFile(self, file):
         if file != "":
@@ -60,6 +61,8 @@ class VRDUtil:
 
     def storeFramesOnDrive(self, frames, path = "frames"):
 
+        path = self.config.workingDir+"/"+path
+
         if os.path.isdir(path) == False:
             os.makedirs(path)
         else:
@@ -75,6 +78,7 @@ class VRDUtil:
             
             
     def readFramesFromDrive(self, path = "frames"):
+        path = self.config.workingDir+"/"+path
         print("Reading frames ("+path+")")
         frames = []
         frameFiles = os.listdir(path)
@@ -109,7 +113,8 @@ class VRDUtil:
         plt.imshow(fb)
         plt.show()
         
-    def storeKeyPointsOnDrive(self, keyPointsCollection, path = "./assets/processed"):
+    def storeKeyPointsOnDrive(self, keyPointsCollection, path):
+        path = self.config.workingDir+"/"+path
         if os.path.isdir(path) == False:
             os.makedirs(path)
 
@@ -117,9 +122,9 @@ class VRDUtil:
         zeroPadding = len(str(len(keyPointsCollection)))
         i = 0
         for fkp in keyPointsCollection:
-            i = i + 1
+            i += 1
             kpList = []
-            for keyPoint in fkp["kp"]:
+            for keyPoint in fkp:
                 
                 #print(kpItem)
                 #keyPoint = kp["kp"]
@@ -132,12 +137,26 @@ class VRDUtil:
                 #        "s": keyPoint.size
                 #    })
             
-            with open(path+"/frame"+str(i).rjust(zeroPadding, "0")+".json", "wb") as fp:
+            with open(path+"/frame"+str(i).rjust(zeroPadding, "0")+".orb", "wb") as fp:
                 pickle.dump(kpList, fp)
                 #json.dump(kpList, fp)
                 
+    def readKeyPointsFromDrive(self, path):
+        path = self.config.workingDir+"/"+path
+        print("Reading ORBs ("+path+")")
+        frames = []
+        frameFiles = os.listdir(path)
+        frameFiles.sort()
+        for f in frameFiles:
+
+            with open(path+"/"+f, "rb") as fp:
+                orb = pickle.load(fp)
+                frames.append(orb)
+        
+        return frames
                 
     def storeColorCorrelationOnDrive(self, ccs, path):
+        path = self.config.workingDir+"/"+path
         if os.path.isdir(path) == False:
             os.makedirs(path)
 
@@ -147,10 +166,11 @@ class VRDUtil:
         i = 0
         for cc in ccs:
             i = i + 1
-            with open(path+"/frame"+str(i).rjust(zeroPadding, "0")+"-cc.txt", "w") as fp:
+            with open(path+"/frame"+str(i).rjust(zeroPadding, "0")+".txt", "w") as fp:
                 fp.write(cc["bin"])
                 
     def readColorCorrelationFromDrive(self, path):
+        path = self.config.workingDir+"/"+path
         print("Reading CCs ("+path+")")
         frames = []
         frameFiles = os.listdir(path)
@@ -163,6 +183,10 @@ class VRDUtil:
 
 
     def getReferenceVideosList(self):
-        fingerprintsPath = "assets/fingerprints"
+        fingerprintsPath = self.config.workingDir+"/assets/fingerprints"
         files = [f for f in listdir(fingerprintsPath) if os.path.isdir(join(fingerprintsPath, f))]
         return files
+
+    def getFrameTimeIndex(self, frameIndex):
+        offsetSeconds = round((1 / self.config.DOWNSAMPLE_TO_FPS) * frameIndex)
+        return offsetSeconds

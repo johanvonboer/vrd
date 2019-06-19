@@ -1,36 +1,48 @@
-from lib import VRDUtil, ThGenerator, ThMatcher, CCGenerator
+from lib import VRDConfig, VRDUtil, ThGenerator, ThMatcher, CCGenerator, ORBGenerator, MultiLevelMatcher
 import json, sys, os, argparse
 
+#  python -u vrd.py --input assets/video-reference-library/Zakatinspired.mp4 --working-dir VRD
+
 parser = argparse.ArgumentParser()
-parser.add_argument("command", help="The command you would like to run. Options are: thGen, thMatch, ccGen, ccMatch, orbGen, ssmGen, ssmMatch, genAllRefVideos")
+parser.add_argument("--command", help="The command you would like to run. Options are: thGen, thMatch, ccGen, ccMatch, orbGen, ssmGen, ssmMatch, genAllRefVideos")
 parser.add_argument("--input", help="Path to the input video file, which is required for most commands.")
+parser.add_argument("--working-dir", help="Path to VRD working/root directory. Defaults to current directory.")
 args = parser.parse_args()
 
 cmd = args.command
 queryVideo = args.input
 path, fileName = os.path.split(queryVideo)
 
+config = VRDConfig.VRDConfig()
+
+if args.working_dir == None:
+    config.workingDir = "."
+else:
+    config.workingDir = args.working_dir
+
+
+if cmd == None:
+    MultiLevelMatcher.MultiLevelMatcher(config).run(queryVideo)
+
 if cmd == "fpAll":
-    qFrames, ccFrames = ThGenerator.ThGenerator().run(queryVideo)
-    
-    
-    ThMatcher.ThMatcher().run(qFrames)
+    qFrames, ccFrames = ThGenerator.ThGenerator(config).run(queryVideo)
+    ThMatcher.ThMatcher(config).run(qFrames)
     #CCGenerator.CCGenerator.run(ccFrames)
     #CCMatcher.CCMatcher().run()
 
 
 if cmd == "ccGen":
-    CCGenerator.CCGenerator.run(queryVideo)
+    CCGenerator.CCGenerator(config).run(queryVideo)
 
 if cmd == "ccMatch":
-    ccMatcher = CCMatcher.CCMatcher()
+    ccMatcher = CCMatcher.CCMatcher(config)
 
 if cmd == "thGen":
-    ThGenerator.ThGenerator().run(queryVideo)
+    ThGenerator.ThGenerator(config).run(queryVideo)
 
 if cmd == "thMatch":
-    vu = VRDUtil.VRDUtil()
-    thMatcher = ThMatcher.ThMatcher()
+    vu = VRDUtil.VRDUtil(config)
+    thMatcher = ThMatcher.ThMatcher(config)
     videos = vu.getReferenceVideosList()
     processedVideos = 0
 
@@ -59,7 +71,7 @@ if cmd == "genAllRefVideos":
 
     files = [f for f in listdir(refLibPath) if isfile(join(refLibPath, f))]
 
-    thGen = ThGenerator()
+    thGen = ThGenerator(config)
     for file in files:
 
         #Check if already exists

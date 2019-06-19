@@ -1,12 +1,13 @@
 from lib import VRDConfig, VRDUtil
+import json
 import numpy as np
 import os
 
 class ThMatcher():
 
-    def __init__(self):
-        self.config = VRDConfig.VRDConfig()
-        self.VRDUtil = VRDUtil.VRDUtil()
+    def __init__(self, config):
+        self.config = config
+        self.VRDUtil = VRDUtil.VRDUtil(config)
 
     def getMeanPixelValue(self, frame):
         mp = np.zeros(frame[0].shape, dtype=np.uint64)
@@ -49,36 +50,32 @@ class ThMatcher():
             for rFrame in rVideo:
                 refFrameIndex += 1
                 matchRate = self.thMatchFrames(qFrame, rFrame)
-                if matchRate > self.config.TH_MATCH_THRESHOLD:
+                if matchRate >= self.config.TH_MATCH_THRESHOLD:
                     significantMatches.append({
                             "qFrameIndex": queryFrameIndex,
                             "rFrameIndex": refFrameIndex,
                             "matchRate": matchRate,
-                            "qFrameTimeOffset": self.getFrameTimeIndex(queryFrameIndex),
-                            "rFrameTimeOffset": self.getFrameTimeIndex(refFrameIndex)
+                            "qFrameTimeOffset": self.VRDUtil.getFrameTimeIndex(queryFrameIndex),
+                            "rFrameTimeOffset": self.VRDUtil.getFrameTimeIndex(refFrameIndex)
                         })
 
         return significantMatches
 
-    def getFrameTimeIndex(self, frameIndex):
-        offsetSeconds = round((1 / self.config.DOWNSAMPLE_TO_FPS) * frameIndex)
 
-        return offsetSeconds
+    def run(self, videoFilePath):
+        path, fileName = os.path.split(videoFilePath)
+        queryFrames = self.VRDUtil.readFramesFromDrive("assets/fingerprints/"+fileName+"/Th")
 
-
-    def run(self, queryFrames):
-
-        vu = VRDUtil.VRDUtil()
-        videos = vu.getReferenceVideosList()
+        videos = self.VRDUtil.getReferenceVideosList()
         processedVideos = 0
 
         for video in videos:
             rvPath, rvFilename = os.path.split(video)
-            rVideo = vu.readFramesFromDrive("assets/fingerprints/"+rvFilename+"/Th")
+            rVideo = self.VRDUtil.readFramesFromDrive("assets/fingerprints/"+rvFilename+"/Th")
             significantFrameMatches = self.thMatchVideos(queryFrames, rVideo)
             if len(significantFrameMatches) > 0:
                 out = {
-                    "qVideo": queryVideo,
+                    "qVideo": fileName,
                     "rVideo": video,
                     "matches": significantFrameMatches
                 }
